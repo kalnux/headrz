@@ -7,7 +7,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 def banner():
     print("")
     print("======================================================")
-    print(" Houssam - MALLEUM - .................................")
+    print(" Houssam .............................................")
     print("------------------------------------------------------")
     print(" A script for checking HTTP Security Response Headers ")
     print("======================================================")
@@ -36,13 +36,19 @@ with open('security_headers_results.csv', mode='a', newline='') as f:
         writer.writerow(headers_row)
 
     for target in targets:
-        if not target.startswith('http'):
-            target = f'https://{target}'
+        if ':' in target:
+            ip, port = target.split(':')
+            if port == '443':
+                url = f'https://{ip}'
+            else:
+                url = f'http://{ip}:{port}'
+        else:
+            url = f'https://{target}'
 
         try:
-            response = requests.get(target, verify=False)
+            response = requests.get(url, verify=False)
 
-            results = [target]
+            results = [url]
             for header in security_headers:
                 value = response.headers.get(header)
                 if value is not None:
@@ -53,5 +59,5 @@ with open('security_headers_results.csv', mode='a', newline='') as f:
             writer.writerow(results)
 
         except (requests.exceptions.RequestException, ValueError) as e:
-            print(f'Error checking {target}: {e}')
+            print(f'Error checking {url}: {e}')
             continue
