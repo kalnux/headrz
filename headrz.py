@@ -5,15 +5,6 @@ import urllib3
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def banner():
-    print("")
-    print("======================================================")
-    print(" Houssam .............................................")
-    print("------------------------------------------------------")
-    print(" A script for checking HTTP Security Response Headers ")
-    print("======================================================")
-    print("")
-
 security_headers = [
     'Strict-Transport-Security',
     'X-Frame-Options',
@@ -55,17 +46,26 @@ with open('security_headers_results.csv', mode='w', newline='') as file:
         # Determine the protocol and URL format
         if ':' in target:
             ip, port = target.split(':')
-            url_http = f'http://{ip}:{port}'
-            url_https = f'https://{ip}:{port}'
+            port = int(port)
+            if port in [443, 8443]:
+                url_https = f'https://{ip}:{port}'
+                results = check_url(url_https, security_headers)
+            elif port in [80, 8080]:
+                url_http = f'http://{ip}:{port}'
+                results = check_url(url_http, security_headers)
+            else:
+                # Try both protocols for non-standard ports
+                url_http = f'http://{ip}:{port}'
+                url_https = f'https://{ip}:{port}'
+                results = check_url(url_http, security_headers)
+                if 'Error' in results:
+                    results = check_url(url_https, security_headers)
         else:
             url_http = f'http://{target}'
             url_https = f'https://{target}'
-
-        # First, try HTTP
-        results = check_url(url_http, security_headers)
-        if 'Error' in results:
-            # If HTTP fails, try HTTPS
-            results = check_url(url_https, security_headers)
+            results = check_url(url_http, security_headers)
+            if 'Error' in results:
+                results = check_url(url_https, security_headers)
 
         # If results is still a string, it indicates an error; otherwise, it's the header checks
         if isinstance(results, str):
